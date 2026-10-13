@@ -1150,6 +1150,12 @@ Fingerprint: SBS-TRAINING-SAMPLE-B1-v1 | https://shop.specialtybolt.com/
     body.presenter-mode .view.active .detail .back-btn{ top:12px; left:14px; }
     body.presenter-mode .view.active .detail .eyebrow{ top:52px; font-size:.7rem; }
   }
+
+  @media (max-height:700px){
+    body.presenter-mode .hero-band{padding-top:24px; padding-bottom:36px;}
+    body.presenter-mode .hero-band h1{font-size:clamp(1.8rem, 4vw, 2.6rem);}
+    .hero-band .thesis{font-size:.95rem; line-height:1.45; margin-bottom:16px;}
+  }
 </style>
 </head>
 <body class="presenter-mode">
@@ -2240,13 +2246,13 @@ function pmApplyFragments(detail){
   }
   var hasTitle = pmState && pmState.stepHasTitle && pmState.stepHasTitle[pmState.step];
   detail.classList.toggle('pm-step-notitle', !!pmState && !hasTitle);
-  /* Steps led by an orange section bar, or that show pictures, are anchored to the top
+  /* Steps that show pictures are anchored to the top (text-only steps, even with an orange bar, are centred)
      so the bar / picture always starts at the same height right under the topic label.
      Text-only statement steps stay vertically centred. */
   var onEls = detail.querySelectorAll('.pm-on');
   var visual = false;
   for(var q=0;q<onEls.length;q++){
-    if(onEls[q].classList.contains('section-bar') || onEls[q].querySelector('img, .section-bar') || onEls[q].tagName==='IMG'){ visual = true; break; }
+    if(onEls[q].querySelector('img') || onEls[q].tagName==='IMG'){ visual = true; break; }
   }
   detail.classList.toggle('pm-top', !!pmState && !hasTitle && visual);
   detail.classList.toggle('pm-title-pic', !!pmState && !!hasTitle && visual);
@@ -3044,12 +3050,19 @@ function pmFit(){
   if(d.classList.contains('pm-top') || d.classList.contains('pm-title-pic')){ hi=Math.min(hi,1.3); }
   if(fits(hi)){ return; }
   for(var k=0;k<9;k++){ var mid=(lo+hi)/2; if(fits(mid)){ lo=mid; } else { hi=mid; } }
-  fits(Math.floor(lo*100)/100);
+  var zf=Math.floor(lo*100)/100;
+  /* Layout isn't perfectly monotonic (wrapping text, vh-sized photos), so verify and nudge down until it truly fits */
+  for(var q=0;q<30 && !fits(zf) && zf>0.2;q++){ zf=Math.round((zf-0.02)*100)/100; }
 }
 function pmFitSoon(){ clearTimeout(pmFitTimer); pmFitTimer=setTimeout(pmFit,60); setTimeout(pmFit,480); setTimeout(pmFit,1000); }
 var _pmApplyOrig=pmApplyFragments;
 pmApplyFragments=function(detail){ _pmApplyOrig(detail); pmFitSoon(); };
 window.addEventListener('resize',pmFitSoon);
+if(document.fonts){
+  if(document.fonts.ready){ document.fonts.ready.then(pmFitSoon); }
+  if(document.fonts.addEventListener){ document.fonts.addEventListener('loadingdone',pmFitSoon); }
+}
+window.addEventListener('load',pmFitSoon);
 document.addEventListener('click',pmFitSoon);
 document.addEventListener('change',pmFitSoon);
 document.addEventListener('load',pmFitSoon,true);
